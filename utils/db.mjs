@@ -10,36 +10,47 @@ class DBClient {
 
     this.connected = false;
     this.database = database;
-    this.client = new MongoClient(`mongodb://${host}:${port}`);
+    this.uri = `mongodb://${host}:${port}`;
+    this.client = null;
+    this.db = null;
+    this.connect();
+  }
 
-    this.client.connect()
-      .then(() => {
-        this.connected = true;
-      })
-      .catch((error) => {
-        this.connected = false;
-        console.log(`MongoDB client error: ${error}`);
-      });
+  async connect() {
+    try {
+      if (typeof MongoClient.connect === 'function') {
+        this.client = await MongoClient.connect(this.uri, {
+          useNewUrlParser: true,
+          useUnifiedTopology: true,
+        });
+      } else {
+        this.client = new MongoClient(this.uri);
+        if (typeof this.client.connect === 'function') {
+          await this.client.connect();
+        }
+      }
 
-    this.client.on('close', () => {
-      this.connected = false;
-    });
-    this.client.on('error', (error) => {
+      this.db = this.client.db(this.database);
+      this.connected = true;
+
+      if (typeof this.client.on === 'function') {
+        this.client.on('close', () => {
+          this.connected = false;
+        });
+
+        this.client.on('error', (error) => {
+          this.connected = false;
+          console.log(`MongoDB client error: ${error}`);
+        });
+      }
+    } catch (error) {
       this.connected = false;
       console.log(`MongoDB client error: ${error}`);
-    });
+    }
   }
 
   isAlive() {
     return this.connected;
-  }
-
-  get db() {
-    if (!this.connected) {
-      return null;
-    }
-
-    return this.client.db(this.database);
   }
 
   async nbUsers() {
