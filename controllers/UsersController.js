@@ -17,13 +17,14 @@ class UsersController {
       return response.status(400).json({ error: 'Missing password' });
     }
 
-    const existingUser = await dbClient.db.collection('users').findOne({ email });
+    const db = await dbClient.getDb();
+    const existingUser = await db.collection('users').findOne({ email });
     if (existingUser) {
       return response.status(400).json({ error: 'Already exist' });
     }
 
     const hashedPassword = crypto.createHash('sha1').update(password).digest('hex');
-    const result = await dbClient.db.collection('users').insertOne({
+    const result = await db.collection('users').insertOne({
       email,
       password: hashedPassword,
     });
@@ -46,7 +47,8 @@ class UsersController {
       return response.status(401).json({ error: 'Unauthorized' });
     }
 
-    const user = await dbClient.db.collection('users').findOne({ _id: new ObjectId(userId) });
+    const db = await dbClient.getDb();
+    const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
     if (!user) {
       return response.status(401).json({ error: 'Unauthorized' });
     }

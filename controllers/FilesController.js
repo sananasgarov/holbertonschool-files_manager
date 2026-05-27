@@ -51,7 +51,8 @@ class FilesController {
       return null;
     }
 
-    return dbClient.db.collection('files').findOne({
+    const db = await dbClient.getDb();
+    return db.collection('files').findOne({
       _id: new ObjectId(fileId),
       userId: new ObjectId(userId),
     });
@@ -84,7 +85,8 @@ class FilesController {
       return response.status(400).json({ error: 'Missing data' });
     }
 
-    const filesCollection = dbClient.db.collection('files');
+    const db = await dbClient.getDb();
+    const filesCollection = db.collection('files');
     let parentObjectId = parentId;
 
     if (parentId !== 0 && parentId !== '0') {
@@ -171,7 +173,8 @@ class FilesController {
   }
 
   static async getFile(request, response) {
-    const filesCollection = dbClient.db.collection('files');
+    const db = await dbClient.getDb();
+    const filesCollection = db.collection('files');
     let file;
 
     try {
@@ -199,14 +202,16 @@ class FilesController {
       }
     }
 
-    if (!file.localPath) {
+    const { localPath: fileLocalPath, name: fileName } = file;
+
+    if (!fileLocalPath) {
       return response.status(404).json({ error: 'Not found' });
     }
 
     const { size } = request.query || {};
-    let localPath = file.localPath;
+    let localPath = fileLocalPath;
     if (file.type === 'image' && ['500', '250', '100'].includes(String(size))) {
-      localPath = `${file.localPath}_${size}`;
+      localPath = `${fileLocalPath}_${size}`;
     }
 
     let content;
@@ -216,7 +221,7 @@ class FilesController {
       return response.status(404).json({ error: 'Not found' });
     }
 
-    const contentType = mime.lookup(file.name) || 'application/octet-stream';
+    const contentType = mime.lookup(fileName) || 'application/octet-stream';
     return response.status(200).set('Content-Type', contentType).send(content);
   }
 
@@ -226,10 +231,11 @@ class FilesController {
       return null;
     }
 
-    const parentId = request.query.parentId === undefined ? '0' : request.query.parentId;
-    const pageNumber = Number(request.query.page);
+    const { parentId = '0', page: pageQuery } = request.query || {};
+    const pageNumber = Number(pageQuery);
     const page = Number.isNaN(pageNumber) ? 0 : pageNumber;
-    const filesCollection = dbClient.db.collection('files');
+    const db = await dbClient.getDb();
+    const filesCollection = db.collection('files');
 
     const match = {
       userId: new ObjectId(userId),
@@ -264,7 +270,8 @@ class FilesController {
       return response.status(404).json({ error: 'Not found' });
     }
 
-    const updatedFile = await dbClient.db.collection('files').findOneAndUpdate(
+    const db = await dbClient.getDb();
+    const updatedFile = await db.collection('files').findOneAndUpdate(
       { _id: file._id },
       { $set: { isPublic: true } },
       { returnDocument: 'after' },
@@ -284,7 +291,8 @@ class FilesController {
       return response.status(404).json({ error: 'Not found' });
     }
 
-    const updatedFile = await dbClient.db.collection('files').findOneAndUpdate(
+    const db = await dbClient.getDb();
+    const updatedFile = await db.collection('files').findOneAndUpdate(
       { _id: file._id },
       { $set: { isPublic: false } },
       { returnDocument: 'after' },
@@ -295,3 +303,4 @@ class FilesController {
 }
 
 export default FilesController;
+

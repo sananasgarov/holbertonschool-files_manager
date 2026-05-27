@@ -12,8 +12,7 @@ class DBClient {
     this.database = database;
     this.uri = `mongodb://${host}:${port}`;
     this.client = null;
-    this.db = null;
-    this.connect();
+    this.ready = this.connect();
   }
 
   async connect() {
@@ -30,7 +29,6 @@ class DBClient {
         }
       }
 
-      this.db = this.client.db(this.database);
       this.connected = true;
 
       if (typeof this.client.on === 'function') {
@@ -53,12 +51,19 @@ class DBClient {
     return this.connected;
   }
 
+  async getDb() {
+    await this.ready;
+    return this.client.db(this.database);
+  }
+
   async nbUsers() {
-    return this.db.collection('users').countDocuments();
+    const db = await this.getDb();
+    return db.collection('users').countDocuments();
   }
 
   async nbFiles() {
-    return this.db.collection('files').countDocuments();
+    const db = await this.getDb();
+    return db.collection('files').countDocuments();
   }
 }
 
