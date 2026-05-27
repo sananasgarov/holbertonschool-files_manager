@@ -10,10 +10,11 @@ class DBClient {
 
     this.connected = false;
     this.client = new MongoClient(`mongodb://${host}:${port}`);
-    this.db = this.client.db(database);
+    this.db = null;
 
     this.client.connect()
       .then(() => {
+        this.db = this.client.db(database);
         this.connected = true;
       })
       .catch((error) => {
