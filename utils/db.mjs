@@ -9,12 +9,11 @@ class DBClient {
     const database = process.env.DB_DATABASE || 'files_manager';
 
     this.connected = false;
+    this.database = database;
     this.client = new MongoClient(`mongodb://${host}:${port}`);
-    this.db = null;
 
     this.client.connect()
       .then(() => {
-        this.db = this.client.db(database);
         this.connected = true;
       })
       .catch((error) => {
@@ -33,6 +32,14 @@ class DBClient {
 
   isAlive() {
     return this.connected;
+  }
+
+  get db() {
+    if (!this.connected) {
+      return null;
+    }
+
+    return this.client.db(this.database);
   }
 
   async nbUsers() {
