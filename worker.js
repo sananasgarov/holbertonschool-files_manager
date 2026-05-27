@@ -17,8 +17,7 @@ fileQueue.process(async (job) => {
     throw new Error('Missing userId');
   }
 
-  const db = await dbClient.getDb();
-  const file = await db.collection('files').findOne({
+  const file = await dbClient.db.collection('files').findOne({
     _id: new ObjectId(fileId),
     userId: new ObjectId(userId),
   });

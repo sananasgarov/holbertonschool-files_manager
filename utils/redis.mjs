@@ -33,27 +33,60 @@ class RedisClient {
       return this.getAsync(key);
     }
 
-    return this.client.get(key);
+    if (this.client && typeof this.client.isOpen === 'boolean' && !this.client.isOpen) {
+      return null;
+    }
+
+    try {
+      return await this.client.get(key);
+    } catch (error) {
+      console.log(`Redis get error: ${error}`);
+      return null;
+    }
   }
 
   async set(key, value, duration) {
     if (this.setexAsync) {
-      await this.setexAsync(key, duration, value);
+      try {
+        await this.setexAsync(key, duration, value);
+      } catch (error) {
+        console.log(`Redis set error: ${error}`);
+      }
       return;
     }
 
-    await this.setAsync(key, value, {
-      EX: duration,
-    });
+    if (this.client && typeof this.client.isOpen === 'boolean' && !this.client.isOpen) {
+      return;
+    }
+
+    try {
+      await this.setAsync(key, value, {
+        EX: duration,
+      });
+    } catch (error) {
+      console.log(`Redis set error: ${error}`);
+    }
   }
 
   async del(key) {
     if (this.delAsync) {
-      await this.delAsync(key);
+      try {
+        await this.delAsync(key);
+      } catch (error) {
+        console.log(`Redis del error: ${error}`);
+      }
       return;
     }
 
-    await this.client.del(key);
+    if (this.client && typeof this.client.isOpen === 'boolean' && !this.client.isOpen) {
+      return;
+    }
+
+    try {
+      await this.client.del(key);
+    } catch (error) {
+      console.log(`Redis del error: ${error}`);
+    }
   }
 }
 
