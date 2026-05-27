@@ -21,6 +21,8 @@ class DBClient {
         this.client = await MongoClient.connect(this.uri, {
           useNewUrlParser: true,
           useUnifiedTopology: true,
+          connectTimeoutMS: 2000,
+          serverSelectionTimeoutMS: 2000,
         });
       } else {
         this.client = new MongoClient(this.uri);

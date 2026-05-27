@@ -173,56 +173,55 @@ class FilesController {
   }
 
   static async getFile(request, response) {
-    const db = await dbClient.getDb();
-    const filesCollection = db.collection('files');
-    let file;
-
     try {
+      const db = await dbClient.getDb();
+      const filesCollection = db.collection('files');
+      let file;
+
       file = await filesCollection.findOne({ _id: new ObjectId(request.params.id) });
-    } catch (error) {
-      file = null;
-    }
-
-    if (!file) {
-      return response.status(404).json({ error: 'Not found' });
-    }
-
-    if (file.type === 'folder') {
-      return response.status(400).json({ error: "A folder doesn't have content" });
-    }
-
-    if (!file.isPublic) {
-      const userId = await FilesController.getTokenUserId(request);
-      if (!userId) {
+      if (!file) {
         return response.status(404).json({ error: 'Not found' });
       }
 
-      if (file.userId.toString() !== userId) {
+      if (!file.isPublic) {
+        const userId = await FilesController.getTokenUserId(request);
+        if (!userId) {
+          return response.status(404).json({ error: 'Not found' });
+        }
+
+        if (file.userId.toString() !== userId) {
+          return response.status(404).json({ error: 'Not found' });
+        }
+      }
+
+      if (file.type === 'folder') {
+        return response.status(400).json({ error: "A folder doesn't have content" });
+      }
+
+      const { localPath: fileLocalPath, name: fileName } = file;
+
+      if (!fileLocalPath) {
         return response.status(404).json({ error: 'Not found' });
       }
-    }
 
-    const { localPath: fileLocalPath, name: fileName } = file;
+      const { size } = request.query || {};
+      let localPath = fileLocalPath;
+      if (file.type === 'image' && ['500', '250', '100'].includes(String(size))) {
+        localPath = `${fileLocalPath}_${size}`;
+      }
 
-    if (!fileLocalPath) {
-      return response.status(404).json({ error: 'Not found' });
-    }
+      let content;
+      try {
+        content = await fs.readFile(localPath);
+      } catch (error) {
+        return response.status(404).json({ error: 'Not found' });
+      }
 
-    const { size } = request.query || {};
-    let localPath = fileLocalPath;
-    if (file.type === 'image' && ['500', '250', '100'].includes(String(size))) {
-      localPath = `${fileLocalPath}_${size}`;
-    }
-
-    let content;
-    try {
-      content = await fs.readFile(localPath);
+      const contentType = mime.lookup(fileName) || 'application/octet-stream';
+      return response.status(200).set('Content-Type', contentType).send(content);
     } catch (error) {
       return response.status(404).json({ error: 'Not found' });
     }
-
-    const contentType = mime.lookup(fileName) || 'application/octet-stream';
-    return response.status(200).set('Content-Type', contentType).send(content);
   }
 
   static async getIndex(request, response) {
