@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import AuthController from '../controllers/AuthController.js';
-import AppController from '../controllers/AppController.js';
-import FilesController from '../controllers/FilesController.js';
-import UsersController from '../controllers/UsersController.js';
+import AuthController from '../controllers/AuthController';
+import AppController from '../controllers/AppController';
+import FilesController from '../controllers/FilesController';
+import UsersController from '../controllers/UsersController';
 
 const router = Router();
 
